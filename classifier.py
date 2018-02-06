@@ -6,10 +6,10 @@ import re
 
 class data(object):
 	engine = re.compile(r"left=(\d+), right=(\d+), top=(\d+), bottom=(\d+).*obj=(\w+)")
-	identifier = 0
+	identifier = 1
 
 	def __init__(self, line: str):
-		parsedData = self.engine.match(line)
+		parsedData = data.engine.match(line)
 
 		if not parsedData:
 			raise RuntimeError("포맷에 맞지 않음")
@@ -18,8 +18,11 @@ class data(object):
 		self.right = int(parsedData.group(2))
 		self.top = int(parsedData.group(3))
 		self.bottom = int(parsedData.group(4))
-		self.obj = self.identifier
-		self.identifier += 1
+		if parsedData.group(5) == "player":
+			self.obj = data.identifier
+			data.identifier += 1
+		else:
+			self.obj = 0	#공을 판별하기 위함
 		self.vector = None
 
 		avg = lambda x: (x[0] + x[1]) / 2
@@ -43,12 +46,15 @@ class frameData(object):
 			self.objects = []
 		return
 	def append(self, data: data):
-		if data.obj == "player":
+		if data.obj :
 			self.objects.append(data)
 		return
 	def __str__(self):
-		add = lambda x,y: str(x) + str(y) + ' '
-		return reduce(add, self.objects)
+		ret = "FrameData\n"
+		for obj in self.objects:
+			ret += str(obj) + '\n'
+		ret += "FrameData End\n"
+		return ret
 	def __len__(self):
 		return len(self.objects)
 	def __iter__(self):
@@ -64,11 +70,11 @@ def preprocess(lines: list):
 			frames.append(frameData())
 	return [frame for frame in frames if len(frame) > 0]
 
-def __sub__(x,y):
-	if isinstance(x, tuple) and isinstance(y, tuple):
-		return tuple(map(sub, x,y))
+def tplsub(self,other):
+	if isinstance(self, tuple) and isinstance(other, tuple):
+		return tuple(map(sub, self,other))
 	else:
-		return x - y
+		return self - other
 
 def calculatePositionVector(frame: frameData):
 	#왼쪽 아래의 점을 원점으로 삼아 위치벡터 계산
@@ -79,9 +85,8 @@ def calculatePositionVector(frame: frameData):
 
 def classify(frames: list):
 	def distance(x,y):
-		sqr = lambda x: x ** 2
-		a = x - y
-		return math.sqrt(a[0] ** 2 + a[1] ** 2)
+		a = tplsub(x,y)
+		return sqrt(a[0] ** 2 + a[1] ** 2)
 
 	for frame in frames: calculatePositionVector(frame)
 
@@ -97,5 +102,5 @@ if __name__ == "__main__":
 	with open("output.txt") as file:
 		lines = file.readlines()		
 	frames = preprocess(lines)	
+	print(*frames, sep='\n')
 	classify(frames)
-	print(frames)
