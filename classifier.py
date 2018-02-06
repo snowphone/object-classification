@@ -102,5 +102,5 @@ if __name__ == "__main__":
 	with open("output.txt") as file:
 		lines = file.readlines()		
 	frames = preprocess(lines)	
-	print(*frames, sep='\n')
 	classify(frames)
+	print(*frames, sep='\n')
