@@ -27,10 +27,10 @@ class data(object):
 			data.identifier += 1
 		else:
 			self.obj = 0	#공을 판별하기 위함
-		self.vector = None
 
 		avg = lambda x: (x[0] + x[1]) / 2
 		self.center = tuple(map(avg, zip(self.upPosition(), self.downPosition())))
+		self.vector = self.center
 		return
 
 	def __str__(self):
@@ -62,10 +62,10 @@ class frameData(object):
 		
 def preprocess(lines: list):
 	frames = []
-	delimiter = re.compile(r"\b\d+\b")
+	delimiter = re.compile(r"\d+")
 	frames.append(frameData())
 	for line in lines:
-		if delimiter.match(line):
+		if line == '\n' or delimiter.match(line):
 			frames.append(frameData())
 		else:
 			frames[-1].append(data(line))
@@ -77,9 +77,9 @@ def tplsub(x,y):
 def calculatePositionVector(frame: frameData):
 	#왼쪽 아래의 점을 원점으로 삼아 위치벡터 계산
 	vectors = [obj.center for obj in frame]
-	origin = tuple(map(mean,zip(*vectors)))
 	for obj in frame: 
-		obj.vector = tplsub(obj.center, origin)
+		#obj.vector = tplsub(obj.center, origin)
+		obj.vector = obj.center
 	return
 
 def classify(frames: list):
@@ -117,9 +117,10 @@ def histo(frames: list):
 	print(len(M))
 
 if __name__ == "__main__":
-	name = "output(1).txt"
+	name = "output.txt"
 	with open(name) as file:
 		lines = file.readlines()		
+		
 	lines = list(dropwhile(lambda x: x == '\n', lines))
 	lines = list(dropwhile(lambda x: x == '\n', reversed(lines)))
 	lines = list(reversed(lines))
@@ -129,8 +130,7 @@ if __name__ == "__main__":
 	classify(frames)
 
 	basename = name[:name.find('.')]
-	histo(frames)
+	#histo(frames)
 	with open(basename+"_classified.txt", mode='w+') as file:
 		file.writelines((str(frame) for frame in frames))
 	#print(*frames, sep='\n')
-	histo(frames)
