@@ -5,6 +5,9 @@ from math import sqrt
 from statistics import mean
 from itertools import dropwhile, chain
 import re
+'''
+TODO: 항상 앞의 n개의 이름을 매칭하므로, 적절한 정확도 이하일 경우 매칭을 포기하도록 개선.
+'''
 
 class data(object):
 	engine = re.compile(r"left=(\d+), right=(\d+), top=(\d+), bottom=(\d+).*obj=(\w+)")
