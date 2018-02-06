@@ -3,8 +3,7 @@ from operator import sub, add
 from functools import reduce
 from math import sqrt
 from statistics import mean
-from itertools import dropwhile
-import time
+from itertools import dropwhile, chain
 import re
 
 class data(object):
@@ -28,8 +27,7 @@ class data(object):
 		else:
 			self.obj = 0	#공을 판별하기 위함
 
-		avg = lambda x: (x[0] + x[1]) / 2
-		self.center = tuple(map(avg, zip(self.upPosition(), self.downPosition())))
+		self.center = tuple(map(mean, zip(self.upPosition(), self.downPosition())))
 		return
 
 	def __str__(self):
@@ -76,18 +74,26 @@ def tplsub(x,y):
 	return tuple(map(sub,x,y))
 
 def classify(frames: list):
+	#유클리드 거리 계산
 	def distance(x,y):
 		a = tplsub(x,y)
 		return sqrt(a[0] ** 2 + a[1] ** 2)
 
+	#가장 근접한 좌표를 반환
+	def find_similar(currentObj: data, prevFrames):
+		return min(chain(*prevFrames), key=lambda obj: distance(currentObj.center, obj.center))
+
+	backthrough = 1
+
+	data.usedNum = len(frames[:backthrough])
+	
 	for idx in range(1, len(frames)):
-		prevFrame = frames[idx-1]
 		currentFrame = frames[idx]
-		for prevObj in prevFrame:
-			prevObj.obj = min(data.usedNum + 1, prevObj.obj)
-			most_similar = min(currentFrame, key=lambda obj: distance(prevObj.center, obj.center))
-			most_similar.obj = prevObj.obj
-			data.usedNum = max(data.usedNum, prevObj.obj)
+		prevFrames = frames[idx - backthrough: idx]
+		for currentObj in currentFrame:
+			most_similar: data = find_similar(currentObj, prevFrames)
+			currentObj.obj = most_similar.obj
+			data.usedNum = max(data.usedNum, currentObj.obj)
 	return frames
 
 def histo(frames: list):
@@ -120,8 +126,8 @@ if __name__ == "__main__":
 	classify(frames)
 
 	basename = name[:name.find('.')]
-	#histo(frames)
+	histo(frames)
+
 	with open(basename+"_classified.txt", mode='w+') as file:
 		file.writelines((str(frame) for frame in frames))
 	print("\a")
-	#print(*frames, sep='\n')
