@@ -76,7 +76,7 @@ def tplsub(x,y):
 def calculatePositionVector(frame: frameData):
 	#왼쪽 아래의 점을 원점으로 삼아 위치벡터 계산
 	vectors = [obj.center for obj in frame]
-	origin = min(vectors)
+	origin = tuple(map(mean,zip(*vectors)))
 	for obj in frame: 
 		obj.vector = tplsub(obj.center, origin)
 	return
@@ -127,4 +127,4 @@ if __name__ == "__main__":
 	with open(basename+"_classified.txt", mode='w+') as file:
 		file.writelines((str(frame) for frame in frames))
 	#print(*frames, sep='\n')
-	#histo(frames)
+	histo(frames)
