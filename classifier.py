@@ -1,18 +1,21 @@
 from sys import argv
-from operator import sub 
+from operator import sub, add
 from functools import reduce
 from math import sqrt
+from statistics import mean
+import time
 import re
 
 class data(object):
 	engine = re.compile(r"left=(\d+), right=(\d+), top=(\d+), bottom=(\d+).*obj=(\w+)")
 	identifier = 1
+	usedNum = 1
 
 	def __init__(self, line : str):
 		parsedData = data.engine.match(line)
 
 		if not parsedData:
-			raise RuntimeError("포맷에 맞지 않음")
+			raise RuntimeError(line)
 		
 		self.left = int(parsedData.group(1))
 		self.right = int(parsedData.group(2))
@@ -30,7 +33,7 @@ class data(object):
 		return
 
 	def __str__(self):
-		return "left={}, right={}, top={}, bottom={}, obj_id=0, obj={}".format(self.left, self.right, self.top, self.bottom, self.obj)
+		return "left={}, right={}, top={}, bottom={}, obj_id=0, obj={}\n".format(self.left, self.right, self.top, self.bottom, self.obj)
 
 	def upPosition(self):
 		return (self.left, self.top)
@@ -50,10 +53,7 @@ class frameData(object):
 			self.objects.append(data)
 		return
 	def __str__(self):
-		ret = ""
-		for obj in self.objects:
-			ret += str(obj) + '\n'
-		return ret
+		return "".join((str(obj) for obj in self.objects)) + '\n'
 	def __len__(self):
 		return len(self.objects)
 	def __iter__(self):
@@ -61,12 +61,13 @@ class frameData(object):
 		
 def preprocess(lines: list):
 	frames = []
+	delimiter = re.compile(r"\b\d+\b")
 	frames.append(frameData())
 	for line in lines:
-		if line != '\n':
-			frames[-1].append(data(line))
-		else:
+		if delimiter.match(line):
 			frames.append(frameData())
+		else:
+			frames[-1].append(data(line))
 	return [frame for frame in frames if len(frame) > 0]
 
 def tplsub(x,y):
@@ -92,11 +93,14 @@ def classify(frames: list):
 		prevFrame = frames[idx-1]
 		currentFrame = frames[idx]
 		for prevObj in prevFrame:
+			prevObj.obj = min(data.usedNum + 1, prevObj.obj)
 			most_similar = min(currentFrame, key=lambda obj: distance(prevObj.vector, obj.vector))
 			most_similar.obj = prevObj.obj
+			data.usedNum = max(data.usedNum, prevObj.obj)
 	return frames
 
 def histo(frames: list):
+	'''for debuging'''
 	h = [obj for frame in frames
             for obj in frame]
 	M = dict()
@@ -112,9 +116,15 @@ def histo(frames: list):
 	print(len(M))
 
 if __name__ == "__main__":
-	with open("output.txt") as file:
+	name = "output(1).txt"
+	with open(name) as file:
 		lines = file.readlines()		
 	frames = preprocess(lines)	
 	classify(frames)
-	print(*frames, sep='\n')
+
+	basename = name[:name.find('.')]
+	histo(frames)
+	with open(basename+"_classified.txt", mode='w+') as file:
+		file.writelines((str(frame) for frame in frames))
+	#print(*frames, sep='\n')
 	#histo(frames)
