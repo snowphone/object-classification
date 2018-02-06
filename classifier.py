@@ -3,6 +3,7 @@ from operator import sub, add
 from functools import reduce
 from math import sqrt
 from statistics import mean
+from itertools import dropwhile
 import time
 import re
 
@@ -119,6 +120,11 @@ if __name__ == "__main__":
 	name = "output(1).txt"
 	with open(name) as file:
 		lines = file.readlines()		
+	lines = list(dropwhile(lambda x: x == '\n', lines))
+	lines = list(dropwhile(lambda x: x == '\n', reversed(lines)))
+	lines = list(reversed(lines))
+
+	
 	frames = preprocess(lines)	
 	classify(frames)
 
