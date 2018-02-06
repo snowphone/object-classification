@@ -30,7 +30,6 @@ class data(object):
 
 		avg = lambda x: (x[0] + x[1]) / 2
 		self.center = tuple(map(avg, zip(self.upPosition(), self.downPosition())))
-		self.vector = self.center
 		return
 
 	def __str__(self):
@@ -57,6 +56,8 @@ class frameData(object):
 		return "".join((str(obj) for obj in self.objects)) + '\n'
 	def __len__(self):
 		return len(self.objects)
+	def __bool__(self):
+		return bool(self.objects)
 	def __iter__(self):
 		return (obj for obj in self.objects)
 		
@@ -69,33 +70,22 @@ def preprocess(lines: list):
 			frames.append(frameData())
 		else:
 			frames[-1].append(data(line))
-	return [frame for frame in frames if len(frame) > 0]
+	return [frame for frame in frames if frame]
 
 def tplsub(x,y):
 	return tuple(map(sub,x,y))
-
-def calculatePositionVector(frame: frameData):
-	#왼쪽 아래의 점을 원점으로 삼아 위치벡터 계산
-	vectors = [obj.center for obj in frame]
-	for obj in frame: 
-		#obj.vector = tplsub(obj.center, origin)
-		obj.vector = obj.center
-	return
 
 def classify(frames: list):
 	def distance(x,y):
 		a = tplsub(x,y)
 		return sqrt(a[0] ** 2 + a[1] ** 2)
 
-	for frame in frames: 
-		calculatePositionVector(frame)
-
 	for idx in range(1, len(frames)):
 		prevFrame = frames[idx-1]
 		currentFrame = frames[idx]
 		for prevObj in prevFrame:
 			prevObj.obj = min(data.usedNum + 1, prevObj.obj)
-			most_similar = min(currentFrame, key=lambda obj: distance(prevObj.vector, obj.vector))
+			most_similar = min(currentFrame, key=lambda obj: distance(prevObj.center, obj.center))
 			most_similar.obj = prevObj.obj
 			data.usedNum = max(data.usedNum, prevObj.obj)
 	return frames
@@ -117,7 +107,7 @@ def histo(frames: list):
 	print(len(M))
 
 if __name__ == "__main__":
-	name = "output.txt"
+	name = "output(1).txt"
 	with open(name) as file:
 		lines = file.readlines()		
 		
@@ -133,4 +123,5 @@ if __name__ == "__main__":
 	#histo(frames)
 	with open(basename+"_classified.txt", mode='w+') as file:
 		file.writelines((str(frame) for frame in frames))
+	print("\a")
 	#print(*frames, sep='\n')
