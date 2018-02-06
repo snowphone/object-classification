@@ -8,7 +8,7 @@ class data(object):
 	engine = re.compile(r"left=(\d+), right=(\d+), top=(\d+), bottom=(\d+).*obj=(\w+)")
 	identifier = 1
 
-	def __init__(self, line: str):
+	def __init__(self, line : str):
 		parsedData = data.engine.match(line)
 
 		if not parsedData:
@@ -50,10 +50,9 @@ class frameData(object):
 			self.objects.append(data)
 		return
 	def __str__(self):
-		ret = "FrameData\n"
+		ret = ""
 		for obj in self.objects:
 			ret += str(obj) + '\n'
-		ret += "FrameData End\n"
 		return ret
 	def __len__(self):
 		return len(self.objects)
@@ -70,17 +69,15 @@ def preprocess(lines: list):
 			frames.append(frameData())
 	return [frame for frame in frames if len(frame) > 0]
 
-def tplsub(self,other):
-	if isinstance(self, tuple) and isinstance(other, tuple):
-		return tuple(map(sub, self,other))
-	else:
-		return self - other
+def tplsub(x,y):
+	return tuple(map(sub,x,y))
 
 def calculatePositionVector(frame: frameData):
 	#왼쪽 아래의 점을 원점으로 삼아 위치벡터 계산
 	vectors = [obj.center for obj in frame]
 	origin = min(vectors)
-	for obj in frame: obj.vector = obj.center = origin
+	for obj in frame: 
+		obj.vector = tplsub(obj.center, origin)
 	return
 
 def classify(frames: list):
@@ -88,7 +85,8 @@ def classify(frames: list):
 		a = tplsub(x,y)
 		return sqrt(a[0] ** 2 + a[1] ** 2)
 
-	for frame in frames: calculatePositionVector(frame)
+	for frame in frames: 
+		calculatePositionVector(frame)
 
 	for idx in range(1, len(frames)):
 		prevFrame = frames[idx-1]
@@ -98,9 +96,25 @@ def classify(frames: list):
 			most_similar.obj = prevObj.obj
 	return frames
 
+def histo(frames: list):
+	h = [obj for frame in frames
+            for obj in frame]
+	M = dict()
+	for i in h:
+		idx = i.obj
+		if idx in M:
+			M[idx] += 1
+		else:
+			M[idx] = 1
+	
+	for dt in M.items():
+		print(dt)
+	print(len(M))
+
 if __name__ == "__main__":
 	with open("output.txt") as file:
 		lines = file.readlines()		
 	frames = preprocess(lines)	
 	classify(frames)
 	print(*frames, sep='\n')
+	#histo(frames)
