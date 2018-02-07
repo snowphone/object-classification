@@ -6,7 +6,6 @@ from statistics import mean
 from itertools import dropwhile, chain
 import re
 
-
 def main():
 	name = "output(1).txt"
 	with open(name) as file:
