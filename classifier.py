@@ -1,10 +1,10 @@
-from sys import argv
-from operator import sub, add
-from functools import reduce
-from math import sqrt, hypot
-from statistics import mean
-from itertools import dropwhile, chain
 import re
+from functools import reduce
+from itertools import chain, dropwhile
+from math import hypot, sqrt
+from operator import add, sub
+from statistics import mean
+from sys import argv
 
 from frame import frameInfo
 from rectangle import rectangle
@@ -25,11 +25,12 @@ def main():
 
 	#파일 저장
 	basename = name[:name.find('.')]
-	histo(frames)
+	#histo(frames)
 
 	with open(basename+"_classified.txt", mode='w+') as file:
 		file.writelines((str(frame) for frame in frames))
 	print("\a")
+	return
 
 
 def preprocess(lines: list):
@@ -51,14 +52,15 @@ def tplsub(x: tuple, y: tuple):
 
 
 def classify(frames: list, backthrough=3):
-	''' 이전 n-frame 을 관찰하여 각 객체를 분류한다. '''
+	''' 이전 backthrough개의 프레임 속 객체 중 가장 근접한 객체와 현재 객체를 매칭한다.'''
+
 	def distance(x: tuple, y: tuple):
 		'''두 이차원 튜플간 유클리드 거리를 계산하여 반환한다.'''
 		diff = tplsub(x, y)
 		return hypot(*diff)
 
 	#가장 근접한 좌표를 반환
-	def find_similar(currentObj: rectangle, prevFrames, threshold=150):
+	def find_close_object(currentObj: rectangle, prevFrames, threshold=150):
 		'''
 		이전 프레임들에 있는 객체들과 비교해, 가장 근접한 객체를 반환한다. 
 		단, 가장 근접한 객체와의 거리가 기준치보다 먼 경우, 자기 자신을 반환한다.
@@ -72,9 +74,8 @@ def classify(frames: list, backthrough=3):
 		else:
 			currentObj.obj = rectangle.usedNum + 1
 			return currentObj
-	'''
-	객체 분류 대신 새로운 객체로 인식할 경우 id 이름을 연속해서 사용하기 위함.
-	'''
+
+	''' 객체 분류 대신 새로운 객체로 인식할 경우 id 이름을 연속해서 사용하기 위함. '''
 	rectangle.usedNum = len(frames[:backthrough])
 
 	#첫 프레임은 매칭할 것이 없으므로, 두번째 프레임부터 최대 n개의 프레임을 보고 매칭을 시도한다.
@@ -82,14 +83,14 @@ def classify(frames: list, backthrough=3):
 		currentFrame = frames[idx]
 		prevFrames = frames[max(idx - backthrough, 0): idx]
 		for currentObj in currentFrame:
-			most_similar: rectangle = find_similar(currentObj, prevFrames)
+			most_similar: rectangle = find_close_object(currentObj, prevFrames)
 			currentObj.obj = most_similar.obj
 			rectangle.usedNum = max(rectangle.usedNum, currentObj.obj)
 	return frames
 
 
 def histo(frames: list):
-	'''for debuging'''
+	'''디버깅용'''
 	h = [obj for frame in frames
             for obj in frame]
 	M = dict()
