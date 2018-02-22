@@ -72,7 +72,9 @@ def classify(frames: list, backthrough=3):
 		else:
 			currentObj.obj = rectangle.usedNum + 1
 			return currentObj
-
+	'''
+	객체 분류 대신 새로운 객체로 인식할 경우 id 이름을 연속해서 사용하기 위함.
+	'''
 	rectangle.usedNum = len(frames[:backthrough])
 
 	#첫 프레임은 매칭할 것이 없으므로, 두번째 프레임부터 최대 n개의 프레임을 보고 매칭을 시도한다.
