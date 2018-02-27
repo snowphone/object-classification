@@ -64,7 +64,7 @@ ostream& operator<<(ostream& os, const Object& obj)
 {
 	os << "left=" << obj.mLeftTop.first << ", right=" << obj.mRightBottom.first
 		<< ", top=" << obj.mLeftTop.second << ", bottom=" << obj.mRightBottom.second
-		<< ", obj_id=0, obj=" << obj.mID;
+		<< ", obj_id=" << static_cast<int>(obj.mType)  << ", obj=" << obj.mID;
 	return os;
 }
 

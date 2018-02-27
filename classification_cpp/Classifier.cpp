@@ -1,20 +1,19 @@
-/* take a look at these obj_ids
- * 1175, 1573, 1730, 1776, 1822, 2162, 2911, 3061
- */
 #include <algorithm>
 #include <cassert>
-#include <functional>	//reference_wrapper
 #include <iostream>
+#include <memory>
 #ifdef _DEBUG
 #include <iostream>
 #endif
 
 #include "Classifier.h"
 
-using std::remove_if;	using std::endl;
+using std::remove_if;	using std::endl;		
 using std::min_element;	using std::min;
-using std::max;			using std::reference_wrapper;
-using std::ifstream;	using std::ofstream; 
+using std::max;			using std::ifstream;	
+using std::ofstream;	using std::copy_if;		
+using std::shared_ptr;	using std::back_inserter;
+using std::find_if;		using std::count_if;
 
 Classifier::Classifier()
 {
@@ -27,24 +26,29 @@ Classifier::Classifier(const string& path)
 
 Classifier& Classifier::Classify(const size_t backthrough, const size_t threshold)
 {
-	//chaining
-	vector<reference_wrapper<Object>> objects;
-	for (Frame& frame : mFrameList)
-	{
-		objects.insert(objects.end(), frame.ObjectList().begin(), frame.ObjectList().end());
-	}
+	//extract frames if each frames have at least a player object.
+	vector<Frame::Ptr> validFramePtrList; 
+	copy_if(mFramePtrList.begin(), mFramePtrList.end(), back_inserter(validFramePtrList), [](Frame::Ptr f) {
+		return !f->IsEmpty() &&
+			count_if(f->ObjectPtrList().begin(), f->ObjectPtrList().end(),
+				[](Object::Ptr obj) { return obj->GetType() == Object::Type::player; });
+	});
 
 	mMaxUsedID = backthrough + 1;
 
-	for (auto frameIter = ++mFrameList.begin(); frameIter != mFrameList.end(); ++frameIter)
+	//fPtrIt is framePtrIterator
+	for(auto fPtrIt = ++validFramePtrList.begin(); fPtrIt != validFramePtrList.end(); ++fPtrIt)
 	{
-		for (Object& objToClassify : frameIter->ObjectList())
+		Frame::Ptr framePtr = *fPtrIt;
+		for (Object::Ptr objToClassify : framePtr->ObjectPtrList())
 		{
-			auto beg = (frameIter - mFrameList.begin() < backthrough) ? mFrameList.begin() : frameIter - backthrough;
-			const Object& closestObj = findTheClosestObject(objToClassify, beg, frameIter, threshold);
-			objToClassify.SetID(closestObj.mID);
-			mMaxUsedID = max(objToClassify.mID, closestObj.mID);
-			assert("objToClassify's ID and closestObj's ID must be equal" && closestObj.mID == objToClassify.mID);
+			if (objToClassify->GetType() != Object::Type::player)
+				continue;
+
+			auto beg = (fPtrIt - validFramePtrList.begin() < backthrough) ? validFramePtrList.begin() : fPtrIt - backthrough;
+			const Object::Ptr closestObj = findTheClosestObject(objToClassify, beg, fPtrIt, threshold);
+			objToClassify->SetID(closestObj->mID);
+			mMaxUsedID = max(objToClassify->mID, closestObj->mID);
 		}
 	}
 	return *this;
@@ -52,56 +56,47 @@ Classifier& Classifier::Classify(const size_t backthrough, const size_t threshol
 
 Classifier& Classifier::Read(const string& path)
 {
-	mFrameList.clear();
+	mFramePtrList.clear();
 
 
 	ifstream is(path);
 	string info;
 	while (getline(is, info))
 	{
-		Object obj(info);
-		if (obj.GetType() == Object::Type::header)
+		Object::Ptr obj(new Object(info));
+		if (obj->GetType() == Object::Type::header)
 		{
-			mFrameList.push_back(Frame());
+			Frame::Ptr f(new Frame());
+			mFramePtrList.push_back(f);
 		}
 		else
 		{
-			mFrameList.back().Append(obj);
+			mFramePtrList.back()->Append(obj);
 		}
 	}
-	//remove empty frame objects.
-	auto it = remove_if(mFrameList.begin(), mFrameList.end(), [](Frame& i) { return i.IsEmpty(); });
-	mFrameList.erase(it, mFrameList.end());
 	return *this;
 }
 
 Classifier& Classifier::Write(const string& name)
 {
 	ofstream os(name);
-	for (const Frame& frame : mFrameList)
+	for (const Frame::Ptr framePtr : mFramePtrList)
 	{
-		os << frame << endl;
+		os << *framePtr << endl;
 	}
 	return *this;
 }
 
-const Object& Classifier::findTheClosestObject(
-	Object& objToClassify, const_iterator pFrameBeg, const_iterator pFrameEnd, const size_t threshold)
+const Object::Ptr Classifier::findTheClosestObject(
+	Object::Ptr objToClassify, const_iterator FramePtrBeg, const_iterator FramePtrEnd, const size_t threshold)
 {
-	vector<reference_wrapper<const Object>> objects;
-	for (auto cIt = pFrameBeg; cIt != pFrameEnd; ++cIt)
-	{
-		for (const Object& obj : cIt->ObjectList())
-		{
-			objects.push_back(obj);
-		}
-	}
+	vector<Object::Ptr> objects = Chain(FramePtrBeg, FramePtrEnd);
 
-	const Object& nearest = *min_element(objects.begin(), objects.end(), [&objToClassify](const Object& l, const Object& r) {
-		return Distance(l, objToClassify) < Distance(r, objToClassify);
+	const Object::Ptr nearest = *min_element(objects.begin(), objects.end(), [objToClassify](Object::Ptr l, Object::Ptr r) {
+		return Distance(*l, *objToClassify) < Distance(*r, *objToClassify);
 	});
 
-	if (Distance(nearest, objToClassify) < threshold)
+	if (Distance(*nearest, *objToClassify) < threshold)
 	{
 		return nearest;
 	}
@@ -109,13 +104,28 @@ const Object& Classifier::findTheClosestObject(
 	{
 #ifdef _DEBUG
 		std::cout << "------------------" << std::endl
-			<< "nearset: " << nearest << std::endl
-			<< "object: " << objToClassify << std::endl
-			<< "distance: " << Distance(nearest, objToClassify) << std::endl;
+			<< "nearset: " << *nearest << std::endl
+			<< "object: " << *objToClassify << std::endl
+			<< "distance: " << Distance(*nearest, *objToClassify) << std::endl;
 #endif
 		//reidentificate
-		objToClassify.SetID(mMaxUsedID + 1);
+		objToClassify->SetID(mMaxUsedID + 1);
 		return objToClassify;
 	}
 }
 
+/* Chain function extracts objects from several frames if the frame has objects and the object's type is 'player'.
+ * This function returns the vector of reference_wrapper<Object or const Object> to save memory.
+ */
+vector<Object::Ptr> Chain(Classifier::const_iterator begin, Classifier::const_iterator end)
+{
+	const static auto isPlayer = [](const Object::Ptr obj) { return obj->GetType() == Object::Type::player; };
+
+	vector<Object::Ptr> ret;
+	for (auto it = begin; it != end; ++it)
+	{
+		Frame::Ptr ptr = *it;
+		copy_if(ptr->ObjectPtrList().begin(), ptr->ObjectPtrList().end(), back_inserter(ret), isPlayer);
+	}
+	return ret;
+}

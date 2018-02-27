@@ -10,11 +10,9 @@ Frame::~Frame()
 {
 }
 
-Frame & Frame::Append(const Object & obj)
+Frame& Frame::Append(const Object::Ptr obj)
 {
-	//ignore the ball object
-	if(obj.GetType() == Object::Type::player)
-		mList.push_back(obj);
+	mList.push_back(obj);
 	return *this;
 }
 
@@ -28,21 +26,26 @@ size_t Frame::Size() const
 	return mList.size();
 }
 
-vector<Object>& Frame::ObjectList() 
+vector<Object::Ptr>& Frame::ObjectPtrList() 
 {
 	return mList;
 }
 
-const vector<Object>& Frame::ObjectList() const
+const vector<Object::Ptr>& Frame::ObjectPtrList() const
 {
 	return mList;
 }
 
 ostream& operator<<(ostream& os, const Frame& frame)
 {
-	for(const Object& obj : frame.mList)
+	if (frame.IsEmpty())
 	{
-		os << obj << endl;
+		os << endl;
+		return os;
+	}
+	for(const shared_ptr<Object> objPtr : frame.mList)
+	{
+		os << *objPtr << endl;
 	}
 	return os;
 }

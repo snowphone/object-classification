@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,13 +10,15 @@
 class Object;
 
 using std::string;		using std::vector;
+using std::copy_if;		using std::shared_ptr;
+using std::back_inserter; 
 
 
 class Classifier
 {
 public:
-	using iterator = vector<Frame>::iterator;
-	using const_iterator = vector<Frame>::const_iterator;
+	using iterator = vector<Frame::Ptr>::iterator;
+	using const_iterator = vector<Frame::Ptr>::const_iterator;
 	Classifier();
 	Classifier(const string& path);
 
@@ -23,9 +26,10 @@ public:
 	Classifier& Read(const string& path);
 	Classifier& Write(const string& name);
 private:
-	const Object& findTheClosestObject(Object & objToClassify, const_iterator pFrameBeg, const_iterator pFrameEnd, const size_t threshold);
+	const Object::Ptr findTheClosestObject(Object::Ptr  objToClassify, const_iterator pFrameBeg, const_iterator pFrameEnd, const size_t threshold);
 	string path;
-	vector<Frame> mFrameList;
+	vector<Frame::Ptr> mFramePtrList;
 	int mMaxUsedID = 1;
 };
 
+vector<Object::Ptr> Chain(Classifier::const_iterator begin, Classifier::const_iterator end);

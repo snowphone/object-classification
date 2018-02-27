@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <memory>
 #include <string>
 
 #include "Point.h"
@@ -7,6 +8,7 @@
 class Classifier;
 
 using std::string;	using std::ostream;
+using std::shared_ptr;
 
 
 class Object
@@ -14,7 +16,8 @@ class Object
 	friend ostream& operator<<(ostream& os, const Object& obj);
 	friend class Classifier;
 public:
-	enum class Type : char { ball, player, header };
+	enum class Type : char { player, ball, header };
+	using Ptr = shared_ptr<Object>;
 
 	Object();
 	explicit Object(const string& info);
