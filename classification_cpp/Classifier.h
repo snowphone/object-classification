@@ -3,29 +3,29 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <regex>
 
 #include "Frame.h"
-#include "Object.h"
+
+class Object;
 
 using std::string;		using std::vector;
-using std::ifstream;	using std::ofstream; 
-using std::regex;		using std::regex_search;
 
 
 class Classifier
 {
 public:
+	using iterator = vector<Frame>::iterator;
+	using const_iterator = vector<Frame>::const_iterator;
 	Classifier();
 	Classifier(const string& path);
 
-	Classifier& Classify(const size_t backthrough = 3);
+	Classifier& Classify(const size_t backthrough = 3, const size_t threshold = 150ull);
 	Classifier& Read(const string& path);
 	Classifier& Write(const string& name);
 private:
-	const Object& findTheClosestObject(const Object & objToClassify, const vector<Frame>& prevFrames, const size_t threshold = 100ul);
-	void reIdentificate();	//ID번호를 앞으로 당긴다.
+	const Object& findTheClosestObject(Object & objToClassify, const_iterator pFrameBeg, const_iterator pFrameEnd, const size_t threshold);
 	string path;
 	vector<Frame> mFrameList;
+	int mMaxUsedID = 1;
 };
 

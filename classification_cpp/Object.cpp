@@ -1,4 +1,10 @@
-﻿#include "Object.h"
+﻿#include <regex>
+#include <string>
+
+#include "Object.h"
+
+using std::regex;	using std::regex_search;
+using std::smatch;	using std::stoi;
 
 int Object::identifier = 1;
 
@@ -8,7 +14,6 @@ Object::Object()
 
 Object::Object(const string & info)
 {
-	//현재, 공은 인식에서 제외한다.
 	regex pattern(R"(left=(\d+), right=(\d+), top=(\d+), bottom=(\d+), obj_id=(\d+).*)");
 	smatch matchResults;
 
@@ -21,7 +26,7 @@ Object::Object(const string & info)
 	mRightBottom.first = stoi(matchResults[2].str()), mRightBottom.second = stoi(matchResults[4].str());
 
 
-	mType = static_cast<Type>(std::stoi(matchResults[5].str()));
+	mType = static_cast<Type>(stoi(matchResults[5].str()));
 	if (mType == Type::ball)
 	{
 		mID = 0;

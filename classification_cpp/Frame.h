@@ -5,9 +5,8 @@
 
 #include "Object.h"
 
-using std::vector;
+using std::vector;	using std::ostream;
 using std::endl;
-using std::ostream;
 
 class Frame
 {

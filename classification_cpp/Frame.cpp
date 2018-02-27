@@ -12,7 +12,7 @@ Frame::~Frame()
 
 Frame & Frame::Append(const Object & obj)
 {
-	//선수만 취사 선택(현재 공 인식률이 낮음)
+	//ignore the ball object
 	if(obj.GetType() == Object::Type::player)
 		mList.push_back(obj);
 	return *this;

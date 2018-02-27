@@ -1,6 +1,20 @@
-#include "Classifier.h"
+/* take a look at these obj_ids
+ * 1175, 1573, 1730, 1776, 1822, 2162, 2911, 3061
+ */
+#include <algorithm>
+#include <cassert>
+#include <functional>	//reference_wrapper
 #include <iostream>
+#ifdef _DEBUG
+#include <iostream>
+#endif
 
+#include "Classifier.h"
+
+using std::remove_if;	using std::endl;
+using std::min_element;	using std::min;
+using std::max;			using std::reference_wrapper;
+using std::ifstream;	using std::ofstream; 
 
 Classifier::Classifier()
 {
@@ -11,21 +25,28 @@ Classifier::Classifier(const string& path)
 	Read(path);
 }
 
-Classifier& Classifier::Classify(const size_t backthrough)
+Classifier& Classifier::Classify(const size_t backthrough, const size_t threshold)
 {
-	for (auto it = ++mFrameList.begin(); it != mFrameList.end(); ++it)
+	//chaining
+	vector<reference_wrapper<Object>> objects;
+	for (Frame& frame : mFrameList)
 	{
-		if (it->IsEmpty())
-			continue;
-		for (Object& objToClassify : it->ObjectList())
+		objects.insert(objects.end(), frame.ObjectList().begin(), frame.ObjectList().end());
+	}
+
+	mMaxUsedID = backthrough + 1;
+
+	for (auto frameIter = ++mFrameList.begin(); frameIter != mFrameList.end(); ++frameIter)
+	{
+		for (Object& objToClassify : frameIter->ObjectList())
 		{
-			auto beg = (it - mFrameList.begin() < backthrough) ? mFrameList.begin() : it - backthrough;
-			const Object& closestObj = findTheClosestObject(objToClassify, vector<Frame>(beg, it));
+			auto beg = (frameIter - mFrameList.begin() < backthrough) ? mFrameList.begin() : frameIter - backthrough;
+			const Object& closestObj = findTheClosestObject(objToClassify, beg, frameIter, threshold);
 			objToClassify.SetID(closestObj.mID);
-			//std::cout << objToClassify << std::endl;
+			mMaxUsedID = max(objToClassify.mID, closestObj.mID);
+			assert("objToClassify's ID and closestObj's ID must be equal" && closestObj.mID == objToClassify.mID);
 		}
 	}
-	reIdentificate();
 	return *this;
 }
 
@@ -48,7 +69,8 @@ Classifier& Classifier::Read(const string& path)
 			mFrameList.back().Append(obj);
 		}
 	}
-	auto it = std::remove_if(mFrameList.begin(), mFrameList.end(), [](Frame& i) {return i.IsEmpty(); });
+	//remove empty frame objects.
+	auto it = remove_if(mFrameList.begin(), mFrameList.end(), [](Frame& i) { return i.IsEmpty(); });
 	mFrameList.erase(it, mFrameList.end());
 	return *this;
 }
@@ -58,39 +80,42 @@ Classifier& Classifier::Write(const string& name)
 	ofstream os(name);
 	for (const Frame& frame : mFrameList)
 	{
-		os << frame << std::endl;
+		os << frame << endl;
 	}
 	return *this;
 }
 
-const Object& Classifier::findTheClosestObject(const Object& objToClassify, const vector<Frame>& prevFrames, const size_t threshold)
+const Object& Classifier::findTheClosestObject(
+	Object& objToClassify, const_iterator pFrameBeg, const_iterator pFrameEnd, const size_t threshold)
 {
-	vector<std::reference_wrapper<const Object>> objects;
-	for (const Frame& frame : prevFrames)
+	vector<reference_wrapper<const Object>> objects;
+	for (auto cIt = pFrameBeg; cIt != pFrameEnd; ++cIt)
 	{
-		for (const Object& obj : frame.ObjectList())
+		for (const Object& obj : cIt->ObjectList())
 		{
 			objects.push_back(obj);
 		}
 	}
-	const Object& cand = *std::min_element(objects.begin(), objects.end(), [&objToClassify](const Object& l, const Object& r) {
+
+	const Object& nearest = *min_element(objects.begin(), objects.end(), [&objToClassify](const Object& l, const Object& r) {
 		return Distance(l, objToClassify) < Distance(r, objToClassify);
 	});
-	return Distance(cand, objToClassify) < threshold ? cand : objToClassify;
-}
 
-//ID 번호를 1번부터 차례대로 사용하도록 정리한다.
-void Classifier::reIdentificate()
-{
-	vector<std::reference_wrapper<Object>> objects;
-	for (Frame& frame : mFrameList)
+	if (Distance(nearest, objToClassify) < threshold)
 	{
-		objects.insert(objects.end(), frame.ObjectList().begin(), frame.ObjectList().end());
+		return nearest;
 	}
-
-	for (auto it = ++objects.begin(); it != objects.end(); ++it)
+	else
 	{
-		it->get().SetID(std::min(it->get().mID, it[-1].get().mID + 1));
+#ifdef _DEBUG
+		std::cout << "------------------" << std::endl
+			<< "nearset: " << nearest << std::endl
+			<< "object: " << objToClassify << std::endl
+			<< "distance: " << Distance(nearest, objToClassify) << std::endl;
+#endif
+		//reidentificate
+		objToClassify.SetID(mMaxUsedID + 1);
+		return objToClassify;
 	}
 }
 

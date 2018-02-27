@@ -1,17 +1,13 @@
 #pragma once
 #include <iostream>
 #include <string>
-#include <regex>
 
 #include "Point.h"
 
-using std::string;
-using std::smatch;
-using std::regex;
-using std::regex_search;
-using std::ostream;
-
 class Classifier;
+
+using std::string;	using std::ostream;
+
 
 class Object
 {

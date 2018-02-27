@@ -1,6 +1,5 @@
 #pragma once
 #include <algorithm>
-#include <cmath>
 
 using Point = std::pair<int, int>;
 
