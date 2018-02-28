@@ -36,7 +36,7 @@ Object::Object(const string & info)
 		mID = identifier++;
 	}
 	
-	mCenter = { (mLeftTop.first + mRightBottom.first) / 2, (mLeftTop.second + mRightBottom.second) / 2 };
+	mCenter = { mLeftTop.first + Width() / 2 , mRightBottom.second };
 }
 
 
@@ -44,6 +44,8 @@ Object::~Object()
 {
 }
 
+//It represents its position.
+//Center returns the middle point of two feet.
 const Point& Object::Center() const
 {
 	return mCenter;
@@ -52,6 +54,16 @@ const Point& Object::Center() const
 Object::Type Object::GetType() const
 {
 	return mType;
+}
+
+size_t Object::Height() const
+{
+	return mLeftTop.second - mRightBottom.second;
+}
+
+size_t Object::Width() const
+{
+	return mRightBottom.first - mLeftTop.first;
 }
 
 

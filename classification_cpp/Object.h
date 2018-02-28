@@ -24,6 +24,8 @@ public:
 	~Object();
 	const Point& Center() const;
 	Type GetType() const;
+	size_t Height() const;
+	size_t Width() const;
 
 private:
 	static int identifier;
